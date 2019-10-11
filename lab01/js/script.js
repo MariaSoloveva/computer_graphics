@@ -5,7 +5,7 @@ var before_Ctx = doc_before.getContext("2d");
 var after_Ctx = doc_after.getContext("2d");
 
 var imageElement = new Image();
-imageElement.src = "../source/image.png";
+imageElement.src = "source/image.png";
 imageElement.onload = filterImage;
 
 function filterImage() {
@@ -13,7 +13,7 @@ function filterImage() {
   var height = imageElement.naturalHeight;
 
   function count(x, y, c) {
-    return (y * height + x) * 4 + c;
+    return (y * width + x) * 4 + c;
   }
 
   doc_before.width = width;
