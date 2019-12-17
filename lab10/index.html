@@ -1,0 +1,191 @@
+<html>
+<body onload="drawFunction()">
+<canvas id='lab10' width='800' height='800' style="border:1px solid"> </canvas>
+<script>
+    var canvas = document.getElementById('lab10');
+    var ctx = canvas.getContext('2d');
+
+    function normalize(figure) {
+        var plane = { 'a': 0, 'b': 0, 'c': 0, 'd': 0 };
+        var matrix = [[figure[1].x - figure[0].x, figure[1].y - figure[0].y, figure[1].z - figure[0].z],
+            [figure[2].x - figure[1].x, figure[2].y - figure[1].y, figure[2].z - figure[1].z],
+            [figure[0].x - figure[2].x, figure[0].y - figure[2].y, figure[0].z - figure[2].z]];
+        matrix[1][0] = 0;
+        matrix[1][1] = matrix[1][1] - matrix[0][1] * (matrix[1][0] / matrix[0][0]);
+        matrix[1][2] = matrix[1][2] - matrix[0][2] * (matrix[1][0] / matrix[0][0]);
+        matrix[2][0] = 0;
+        matrix[2][1] = matrix[2][1] - matrix[0][1] * (matrix[2][0] / matrix[0][0]);
+        matrix[2][2] = matrix[2][2] - matrix[0][2] * (matrix[2][0] / matrix[0][0]);
+        matrix[2][1] = 0;
+        matrix[2][2] = matrix[2][2] - matrix[1][2] * (matrix[2][1] / matrix[1][1]);
+
+        if (matrix[2][0] === 0 && matrix[2][1] === 0 && matrix[2][2]) {
+            plane.c = 1;
+        }
+        if (matrix[1][0] === 0 && matrix[1][1] === 0 && matrix[1][2]) {
+            plane.b = 1;
+        }
+        if (matrix[0][0] === 0 && matrix[0][1] === 0 && matrix[0][2]) {
+            plane.a = 1;
+        }
+        if (matrix[1][1] !== 0) {
+            plane.c = 1;
+            plane.b = (-matrix[1][2] * plane.c) / matrix[1][1];
+            if (matrix[0][0] !== 0){
+                plane.a = (-matrix[0][1] * plane.b) / matrix[0][0] + (-matrix[0][2] * plane.c) / matrix[0][0];
+            }
+        }
+        plane.d = -plane.a * figure[0].x - plane.b * figure[0].y - plane.c * figure[0].z;
+        return plane;
+
+    }
+
+    function lines(figure) {
+        var result = [{ 'k': 0, 'b': 0, 'd': 0, 'e': false },
+            { 'k': 0, 'b': 0, 'd': 0, 'e': false },
+            { 'k': 0, 'b': 0, 'd': 0, 'e': false }];
+        result[0].k = (figure[1].y - figure[0].y) / (figure[1].x - figure[0].x);
+        if (figure[1].x === figure[0].x) {
+            result[0].k = figure[0].x;
+            result[0].e = true;
+            if (figure[2].x > figure[1].x)
+            {
+                result[0].d = 1;
+            }
+        }
+        else if (figure[2].y > figure[1].y)
+        {
+            result[0].d = 1;
+        }
+        result[0].b = figure[0].y - result[0].k * figure[0].x;
+        result[1].k = (figure[2].y - figure[1].y) / (figure[2].x - figure[1].x);
+        if (figure[2].x === figure[1].x) {
+            result[1].k = figure[1].x;
+            result[1].e = true;
+            if (figure[0].x > figure[2].x)
+            {
+                result[1].d = 1;
+            }
+        }
+        else if (figure[0].y > figure[2].y)
+        {
+            result[1].d = 1;
+        }
+        result[1].b = figure[1].y - result[1].k * figure[1].x;
+
+        result[2].k = (figure[0].y - figure[2].y) / (figure[0].x - figure[2].x);
+        if (figure[0].x === figure[2].x) {
+            result[2].e = true;
+            result[2].k = figure[2].x;
+            if (figure[1].x > figure[0].x)
+            {
+                result[2].d = 1;
+            }
+        }
+        else if (figure[1].y > figure[0].y)
+        {
+            result[2].d = 1;
+        }
+        result[2].b = figure[2].y - result[2].k * figure[2].x;
+        return result;
+    }
+
+    var first = [{ 'x': -50, 'y': 100, 'z': 100},
+        { 'x': 500, 'y':-78, 'z': 0 },
+        { 'x': 9, 'y': 500, 'z': -10 }];
+    var second = [{ 'x': 100, 'y': 0, 'z': 0 },
+        { 'x': 400, 'y': 0, 'z': 300 },
+        { 'x':400 , 'y': 500, 'z': 10 }];
+
+    var figure1_normal = normalize(first);
+    var figure1_lines = lines(first);
+    var figure2_normal = normalize(second);
+    var figure2_lines = lines(second);
+
+    var state = 0;
+
+    function in_first(x, y) {
+        for (var i = 0; i < 3; i++) {
+            if ((!figure1_lines[i].e) &&
+                ((figure1_lines[i].k * x + figure1_lines[i].b < y && figure1_lines[i].d === 0) ||
+                    (figure1_lines[i].k * x + figure1_lines[i].b >= y && figure1_lines.d === 1))) {
+                return false;
+            } else if (figure1_lines[i].e &&
+                (figure1_lines[i].k < x && figure1_lines[i].d === 0) ||
+                (figure1_lines[i].k >= x && figure1_lines.d === 1)) {
+
+                return false;
+            }
+        }
+        return true;
+    }
+    function in_second(x, y) {
+        for (var i = 0; i < 3; i++) {
+            if ((!figure2_lines[i].e) &&
+                ((figure2_lines[i].k * x + figure2_lines[i].b < y && figure2_lines[i].d === 0) ||
+                    (figure2_lines[i].k * x + figure2_lines[i].b >= y && figure2_lines.d === 1))) {
+
+                return false;
+            } else if (figure2_lines[i].e &&
+                (figure2_lines[i].k < x && figure2_lines[i].d === 0) ||
+                (figure2_lines[i].k >= x && figure2_lines.d === 1)) {
+
+                return false;
+            }
+        }
+        return true;
+    }
+    function is_on_plane(x, y, z) {
+        if (figure1_normal.a * x + figure1_normal.b * y + figure1_normal.c * z + figure1_normal.d === 0 && in_first(x, y)) {
+            state = 1;
+            return;
+        }
+        if (figure2_normal.a * x + figure2_normal.b * y + figure2_normal.c * z + figure2_normal.d === 0 && in_second(x, y)) {
+            state = 2;
+            return;
+        }
+        if (in_first(x, y) && in_second(x, y)) {
+            if (-(figure1_normal.a * x + figure1_normal.b * y + figure1_normal.d) / figure1_normal.c <
+                -(figure2_normal.a * x + figure2_normal.b * y + figure2_normal.d) / figure2_normal.c) {
+                state = 1;
+                return;
+            }
+            else {
+                state = 2;
+                return;
+            }
+        }
+        if (in_first(x, y)) {
+            state = 1;
+            return;
+        }
+        if (in_second(x, y)) {
+            state = 2;
+            return;
+        }
+    }
+    function drawFunction() {
+        for (var x = 0; x < 500; x++) {
+            for (var y = 0; y < 500; y++) {
+                state = 0;
+                for (var z = 0; z < 500; z++) {
+                    is_on_plane(x, y, z);
+                    if (state > 0) {
+                        if (state === 1) {
+                            ctx.fillStyle = '#9776ff';
+
+                        }
+                        if (state === 2) {
+                            ctx.fillStyle = '#afac51';
+                        }
+                        ctx.fillRect(x, y, 1, 1);
+                        break;
+                    }
+                }
+
+            }
+        }
+    }
+</script>
+</body>
+</html>
